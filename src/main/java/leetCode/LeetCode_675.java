@@ -14,8 +14,7 @@ public class LeetCode_675 {
             return -1;
         }
 
-        // 起始位置直接砍掉
-        forest.get(0).set(0, 1);
+        // 给树的高度进行排序
         List<Integer> trees = getNums(forest);
 
         // 如果trees为空，说明没有树，可以直接返还完成，为0
@@ -26,14 +25,12 @@ public class LeetCode_675 {
         // 正常行走
         int step = 0;
         int tempStep;
-        int[] fromLocation = {0, 0};
+        int[] fromLocation = {0, 0}; // 起始位置
         int[] toLocation;
         int[][] arrayForest = getArrayForest(forest);
-        for (int i = 1; i < trees.size(); i++) {
+        for (int i = 0; i < trees.size(); i++) {
             toLocation = findTreeLocation(forest, trees.get(i));
-            System.out.println("from:" + fromLocation[0] + "," + fromLocation[1] + " to " + toLocation[0] + "," + toLocation[1]);
             tempStep = goStep(arrayForest, fromLocation, toLocation) - 1;
-            System.out.println("step:" + tempStep + "  count: " + i);
             if (tempStep < 0) {
                 return -1;
             } else {
@@ -45,36 +42,39 @@ public class LeetCode_675 {
         return step;
     }
 
-    // goStep 利用传染模型即可
+    // goStep 利用传染模型，广度优先遍历
     private int goStep(int[][] arrayForest, int[] fromLocation, int[] toLocation) {
         int[][] forest = copyForest(arrayForest);
         int row = fromLocation[0];
         int col = fromLocation[1];
         forest[row][col] = 1;
-        recursion(forest, row - 1, col); // 上
-        recursion(forest, row + 1, col); // 下
-        recursion(forest, row, col - 1); // 左
-        recursion(forest, row, col + 1); // 右
+        Queue<Integer[]> queue = new ArrayDeque<>();
+        queue.add(new Integer[]{row - 1, col}); // 上
+        queue.add(new Integer[]{row + 1, col}); // 下
+        queue.add(new Integer[]{row, col - 1}); // 左
+        queue.add(new Integer[]{row, col + 1}); // 右
+        while (!queue.isEmpty()) {
+            Integer[] unit = queue.poll();
+            queue.addAll(recursion(forest, unit[0], unit[1]));
+        }
         return forest[toLocation[0]][toLocation[1]];
     }
 
-    // 传染模型，重新赋值forest
-    private void recursion(int[][] forest, int row, int col) {
+    // 传染模型之前写的有问题，重新赋值forest
+    private Queue<Integer[]> recursion(int[][] forest, int row, int col) {
+        Queue<Integer[]> queue = new ArrayDeque<>();
+
         // 超过边界
         if (row < 0 || row >= forest.length || col < 0 || col >= forest[0].length) {
-            return;
+            return queue;
         }
 
         // 如果直接在沼泽，就返还
         if (forest[row][col] == -1) {
-            return;
+            return queue;
         }
 
-        // 如果已经被遍历过则直接跳过
-        if (forest[row][col] > 0) {
-            return;
-        }
-
+        // 如果已经被遍历过，需要到上下左右比较一下
         int up = Integer.MAX_VALUE;
         int down = Integer.MAX_VALUE;
         int left = Integer.MAX_VALUE;
@@ -86,20 +86,25 @@ public class LeetCode_675 {
             down = forest[row + 1][col];
         }
         if (col - 1 >= 0 && forest[row][col - 1] > 0) {
-            up = forest[row][col - 1];
+            left = forest[row][col - 1];
         }
         if (col + 1 < forest[0].length && forest[row][col + 1] > 0) {
-            up = forest[row][col + 1];
+            right = forest[row][col + 1];
         }
 
-        // 赋值
-        forest[row][col] = Math.min(Math.min(up, down), Math.min(left, right)) + 1;
-
-        // 递归
-        recursion(forest, row - 1, col); // 上
-        recursion(forest, row + 1, col); // 下
-        recursion(forest, row, col - 1); // 左
-        recursion(forest, row, col + 1); // 右
+        /**
+         * 如果之前有过赋值，则只更新当前值
+         */
+        if (forest[row][col] > 0) {
+            forest[row][col] = Math.min(forest[row][col], Math.min(Math.min(up, down), Math.min(left, right)) + 1);
+        } else {
+            forest[row][col] = Math.min(Math.min(up, down), Math.min(left, right)) + 1;
+            queue.add(new Integer[]{row - 1, col}); // 上
+            queue.add(new Integer[]{row + 1, col}); // 下
+            queue.add(new Integer[]{row, col - 1}); // 左
+            queue.add(new Integer[]{row, col + 1}); // 右
+        }
+        return queue;
     }
 
     // 二维数组深拷贝，用于传染模型,-1表示不能通过,0表示普通的树
@@ -126,12 +131,12 @@ public class LeetCode_675 {
         return arrayForest;
     }
 
-    // 将全部树进行升序遍历
+    // 将全部树进行升序遍历，去除掉0和1
     private List<Integer> getNums(List<List<Integer>> forest) {
         List<Integer> list = new ArrayList<>();
         for (List<Integer> temp1 : forest) {
             for (Integer temp2 : temp1) {
-                if (temp2 != 0) {
+                if (temp2 != 0 && temp2 != 1) {
                     list.add(temp2);
                 }
             }
@@ -227,4 +232,109 @@ public class LeetCode_675 {
         Assert.assertEquals("test1 error", leetCode_675.cutOffTree(forest), 8);
     }
 
+    @Test
+    public void test6() {
+        List<List<Integer>> forest = new ArrayList<>();
+        ArrayList<Integer> arrayList1 = new ArrayList(Arrays.asList(new Integer[]{4, 6, 3}));
+        forest.add(arrayList1);
+        ArrayList<Integer> arrayList2 = new ArrayList(Arrays.asList(new Integer[]{8, 5, 7}));
+        forest.add(arrayList2);
+        ArrayList<Integer> arrayList3 = new ArrayList(Arrays.asList(new Integer[]{2, 10, 9}));
+        forest.add(arrayList3);
+        LeetCode_675 leetCode_675 = new LeetCode_675();
+        Assert.assertEquals("test1 error", leetCode_675.cutOffTree(forest), 19);
+    }
+
+
+    @Test
+    public void test7() {
+        int[][] nums = {
+                {6304, 8591, 1651, 4114, 407, 3998, 4382},
+                {6614, 927, 235, 3358, 9086, 4986, 8284},
+                {8505, 3117, 8012, 0, 5724, 3323, 6157},
+                {8799, 3083, 8817, 5648, 3113, 8562, 8787},
+                {2931, 4668, 4378, 3901, 8718, 9635, 41},
+                {6223, 4425, 509, 0, 4855, 0, 0},
+                {1685, 6117, 732, 9372, 9975, 6939, 6405},
+                {4133, 9246, 4867, 0, 723, 9105, 9484},
+                {2910, 2771, 8412, 2757, 8148, 7315, 5379}};
+    }
+
+    @Test
+    public void test8() {
+        List<List<Integer>> forest = new ArrayList<>();
+        ArrayList<Integer> arrayList3 = new ArrayList(Arrays.asList(new Integer[]{15, 9, 5, 12, 14}));
+        forest.add(arrayList3);
+        ArrayList<Integer> arrayList4 = new ArrayList(Arrays.asList(new Integer[]{7, 6, 13, 17, 2}));
+        forest.add(arrayList4);
+        ArrayList<Integer> arrayList5 = new ArrayList(Arrays.asList(new Integer[]{3, 0, 8, 0, 0}));
+        forest.add(arrayList5);
+        ArrayList<Integer> arrayList6 = new ArrayList(Arrays.asList(new Integer[]{4, 16, 18, 11, 10}));
+        forest.add(arrayList6);
+        LeetCode_675 leetCode_675 = new LeetCode_675();
+        Assert.assertEquals("test1 error", leetCode_675.cutOffTree(forest), 57);
+    }
+
+    @Test
+    public void test9() {
+        List<List<Integer>> forest = new ArrayList<>();
+        ArrayList<Integer> arrayList3 = new ArrayList(Arrays.asList(new Integer[]{4, 2, 3}));
+        forest.add(arrayList3);
+        ArrayList<Integer> arrayList4 = new ArrayList(Arrays.asList(new Integer[]{0, 0, 1}));
+        forest.add(arrayList4);
+        ArrayList<Integer> arrayList5 = new ArrayList(Arrays.asList(new Integer[]{7, 6, 5}));
+        forest.add(arrayList5);
+        LeetCode_675 leetCode_675 = new LeetCode_675();
+        Assert.assertEquals("test1 error", leetCode_675.cutOffTree(forest), 10);
+    }
+
+    @Test
+    public void test10() {
+        List<List<Integer>> forest = new ArrayList<>();
+        ArrayList<Integer> arrayList3 = new ArrayList(Arrays.asList(new Integer[]{7, 0, 3299, 3212, 8228, 0, 1320}));
+        forest.add(arrayList3);
+        LeetCode_675 leetCode_675 = new LeetCode_675();
+        Assert.assertEquals("test1 error", leetCode_675.cutOffTree(forest), -1);
+    }
+
+    @Test
+    public void test11() {
+        List<List<Integer>> forest = new ArrayList<>();
+        ArrayList<Integer> arrayList1 = new ArrayList(Arrays.asList(new Integer[]{7}));
+        forest.add(arrayList1);
+        ArrayList<Integer> arrayList2 = new ArrayList(Arrays.asList(new Integer[]{0}));
+        forest.add(arrayList2);
+        ArrayList<Integer> arrayList3 = new ArrayList(Arrays.asList(new Integer[]{3299}));
+        forest.add(arrayList3);
+        ArrayList<Integer> arrayList4 = new ArrayList(Arrays.asList(new Integer[]{8228}));
+        forest.add(arrayList4);
+        ArrayList<Integer> arrayList5 = new ArrayList(Arrays.asList(new Integer[]{0}));
+        forest.add(arrayList5);
+        ArrayList<Integer> arrayList6 = new ArrayList(Arrays.asList(new Integer[]{1320}));
+        forest.add(arrayList6);
+        LeetCode_675 leetCode_675 = new LeetCode_675();
+        Assert.assertEquals("test1 error", leetCode_675.cutOffTree(forest), -1);
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
