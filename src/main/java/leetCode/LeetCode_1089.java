@@ -11,6 +11,7 @@ import java.util.List;
  * @description:
  */
 public class LeetCode_1089 {
+
     public void duplicateZeros(int[] arr) {
         List<Integer> list = new ArrayList<>();
         for (int i = 0; i < arr.length && list.size() <= arr.length; i++) {
