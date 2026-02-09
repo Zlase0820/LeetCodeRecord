@@ -4,14 +4,9 @@ from typing import List
 
 class Solution:
     def minSubArrayLen(self, target: int, nums: List[int]) -> int:
-        sums = [0]*len(nums)
-        sum = 0
-        min_length = 100000
-        for index in range(len(nums)):
-            sum += nums[index] 
-            sums[index] = sum
-            while sum > target:
-                
+        return None
+
+        
                     
 
 
